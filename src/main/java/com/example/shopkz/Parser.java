@@ -1,5 +1,6 @@
 package com.example.shopkz;
 
+import com.example.shopkz.model.Category;
 import com.example.shopkz.model.Item;
 import com.example.shopkz.model.MainGroup;
 import com.example.shopkz.model.Section;
@@ -46,42 +47,42 @@ public class Parser {
     @Transactional
     public void getSections() throws IOException {
 
-        Document newsPage = Jsoup.connect(URL).get();
+        Document indexPage = Jsoup.connect(URL).get();
         LOG.info("Получили главную страницу, ищем секции...");
-        Elements sectionElements = newsPage.select(".bx-top-nav-container a");
+        Elements sectionElements = indexPage.select(".bx-top-nav-container ul.bx-nav-list-1-lvl li.bx-nav-1-lvl");
         for (Element sectionElement : sectionElements) {
-            String text = sectionElement.text();
+            Element sectionAnchor = sectionElement.selectFirst(">a");
+            String text = sectionAnchor.text();
             if (SECTIONS.contains(text)) {
                 LOG.info("Получаем {}...", text);
-                String sectionUrl = sectionElement.absUrl("href");
+                String sectionUrl = sectionAnchor.absUrl("href");
                 Section section = sectionRepository.findOneByUrl(sectionUrl)
                         .orElseGet(() -> sectionRepository.save(new Section(text, sectionUrl)));
 
-                Document groupPage = Jsoup.connect(sectionUrl).get();
+//                Document groupPage = Jsoup.connect(sectionUrl).get();
                 LOG.info("Получили {}, ищем группы...", text);
-                Elements groupElements = groupPage.select(".bx_catalog_tile_title a");
+                Elements groupElements = sectionElement.select("ul.bx-nav-list-2-lvl li.bx-nav-2-lvl");
                 for (Element groupElement : groupElements) {
-                    String groupUrl = groupElement.absUrl("href");
-                    String groupText = groupElement.text();
+                    Element groupAnchor = groupElement.selectFirst(">a");
+                    String groupText = groupAnchor.text();
                     LOG.info("Группа  {}", groupText);
                     MainGroup group = mainGroupRepository.findOneByUrl(sectionUrl)
-                            .orElseGet(() -> mainGroupRepository.save(new MainGroup(groupText, groupUrl, section)));
-                    Document itemPage = Jsoup.connect(groupUrl).get();
-                    Elements itemElements = itemPage.select(".bx_catalog_item");
-                    for (Element itemElement : itemElements) {
-                        String itemLink = itemElement.selectFirst(".bx_catalog_item_title a").absUrl("href");
-                        String itemText = itemElement.selectFirst(".bx_catalog_item_title a").text();
-                        String itemDescription=itemElement.selectFirst(".bx_catalog_item_articul").text();
+                            .orElseGet(() -> mainGroupRepository.save(new MainGroup(groupText, null, section)));
 
-                        System.out.println(itemLink);
-                      //  System.out.println(itemText);
-                        LOG.info("Нашли товар {}/{}", itemLink);
+                    Elements categoryElements = groupElement.select("ul.bx-nav-list-3-lvl li.bx-nav-3-lvl");
+                    for (Element categoryElement : categoryElements) {
+                        Element categoryAnchor = categoryElement.selectFirst(">a");
+                        String categoryLink = categoryAnchor.absUrl("href");
+                        String categoryText = categoryAnchor.text();
 
-                        Item item =  new Item();
-                        item.setModel(itemText);
-                        item.setUrl(itemLink);
-                        item.setDescription(itemDescription);
-                        itemRepository.save(item);
+//                        String itemLink = itemElement.selectFirst(".bx_catalog_item_title a").absUrl("href");
+//                        String itemText = itemElement.selectFirst(".bx_catalog_item_title a").text();
+//                        String itemDescription=itemElement.selectFirst(".bx_catalog_item_articul").text();
+
+                        LOG.info("\tКатегория  {}", categoryText);
+                        if (!categoryRepository.existsByUrl(sectionUrl)) {
+                            categoryRepository.save(new Category(categoryText, categoryLink, group));
+                        }
                     }
                 }
             }

@@ -1,0 +1,5 @@
+jQuery(".bx-top-nav-container ul.bx-nav-list-1-lvl li.bx-nav-1-lvl").eq(0).find("ul.bx-nav-list-2-lvl li.bx-nav-2-lvl > a").text()
+
+
+jQuery(".product_available .availability.v_0").length > 0
+if true - product unavailable

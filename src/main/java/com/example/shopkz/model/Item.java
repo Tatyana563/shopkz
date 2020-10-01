@@ -1,7 +1,5 @@
 package com.example.shopkz.model;
 
-import org.hibernate.validator.constraints.Length;
-
 import javax.persistence.*;
 
 @Entity
@@ -10,14 +8,13 @@ public class Item {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Integer id;
-
+    @Column(columnDefinition = "text")
     private String model;
     private Double price;
     private Integer code;
     private Boolean available;
     private String image;
     private String url;
-    @Length(max = 1000000)
     private String description;
 
     public Item(String model, Double price, Integer code, Boolean available, String image, String url, String description) {
