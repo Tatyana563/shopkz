@@ -1,6 +1,7 @@
 package com.example.shopkz.model;
 
 import javax.persistence.*;
+import java.util.Set;
 
 @Entity
 @Table
@@ -13,6 +14,8 @@ public class Category {
     private String url;
     @ManyToOne
     private MainGroup group;
+    @OneToMany(mappedBy = "category")
+    private Set<Item> items;
 
     public Category() {
     }
@@ -62,5 +65,13 @@ public class Category {
                 ", categoryName='" + name + '\'' +
                 ", categoryURL='" + url + '\'' +
                 '}';
+    }
+
+    public Set<Item> getItems() {
+        return items;
+    }
+
+    public void setItems(Set<Item> items) {
+        this.items = items;
     }
 }

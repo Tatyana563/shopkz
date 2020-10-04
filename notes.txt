@@ -3,3 +3,8 @@ jQuery(".bx-top-nav-container ul.bx-nav-list-1-lvl li.bx-nav-1-lvl").eq(0).find(
 
 jQuery(".product_available .availability.v_0").length > 0
 if true - product unavailable
+
+
+QUESTIONS:
+1) комплектующие ссылка
+2) ".bx_catalog_item"  ".bx_catalog_item_container" parseItem difference почему не опустить первый

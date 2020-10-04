@@ -15,7 +15,11 @@ public class Item {
     private Boolean available;
     private String image;
     private String url;
+    @Column(columnDefinition = "text")
     private String description;
+
+    @ManyToOne
+    private Category category;
 
     public Item(String model, Double price, Integer code, Boolean available, String image, String url, String description) {
         this.model = model;
@@ -25,6 +29,10 @@ public class Item {
         this.image = image;
         this.url = url;
         this.description = description;
+    }
+
+    public Item(Integer code) {
+        this.code = code;
     }
 
     public Item() {
@@ -92,5 +100,13 @@ public class Item {
 
     public void setDescription(String description) {
         this.description = description;
+    }
+
+    public Category getCategory() {
+        return category;
+    }
+
+    public void setCategory(Category category) {
+        this.category = category;
     }
 }
