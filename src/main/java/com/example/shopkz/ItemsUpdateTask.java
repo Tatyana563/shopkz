@@ -13,7 +13,6 @@ import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.apache.commons.lang3.StringUtils;
 
 import java.io.IOException;
 import java.util.concurrent.CountDownLatch;
@@ -34,8 +33,7 @@ public class ItemsUpdateTask implements Runnable {
 
     private static final String PAGE_URL_CONSTANT = "filter/almaty-is-v_nalichii-or-ojidaem-or-dostavim/apply/?PAGEN_1=%d";
     private static final Pattern PRODUCT_NUMBER_PATTERN = Pattern.compile("Артикул:\\s+(\\d+)\\s+(.*)");
-    private static final Pattern IMAGE_PATTERN = Pattern.compile("background-image: url(\\()(.*)\\)");
-
+    private static final Pattern IMAGE_PATTERN = Pattern.compile("(.*)(url)(\\()(\')(.*)(\')\\)");
     public ItemsUpdateTask(ItemRepository itemRepository, Category category, CountDownLatch latch) {
         this.itemRepository = itemRepository;
         this.category = category;
@@ -66,22 +64,6 @@ public class ItemsUpdateTask implements Runnable {
             latch.countDown();
         }
     }
-//
-//    private int getTotalPages(Document firstPage) {
-//        Element lastPage = firstPage.selectFirst(".bx-pagination-container > ul > li:nth-last-of-type(2) > a");
-//        String link = lastPage.absUrl("href");
-//        if (!link.isEmpty()) {
-//
-//
-//            String str = "PAGEN_1=";
-//            int index = link.lastIndexOf(str);
-//            String numberOfPages = link.substring(index+str.length());
-//            if (!numberOfPages.isEmpty()) {
-//                return Integer.parseInt(numberOfPages);
-//            }
-//        }
-//        return 0;
-//    }
 
     private int getTotalPages(Document firstPage) {
         Element lastPage = firstPage.selectFirst(".bx-pagination-container > ul > li:nth-last-of-type(2)>a");
@@ -92,7 +74,6 @@ public class ItemsUpdateTask implements Runnable {
         return 0;
     }
 
-    ///knopochnye-telefony/filter/almaty-is-v_nalichii-or-ojidaem-or-dostavim/apply/?PAGEN_1=2
     private void parseItems(Document itemPage) throws JsonProcessingException {
 
         Elements itemElements = itemPage.select(".bx_catalog_item");
@@ -108,19 +89,23 @@ public class ItemsUpdateTask implements Runnable {
             Integer itemCode = jsonNode.get("id").asInt();
             Element descriptionContainer = itemElement.selectFirst(".bx_catalog_item_articul");
             String itemDescription = null;
-            String imageResult = null;
+            String imageUrl = null;
             String itemImage = itemElement.select("a.bx_catalog_item_images").attr("style");
             if (descriptionContainer != null) {
                 String descriptionText = descriptionContainer.text();
                 Matcher matcher = PRODUCT_NUMBER_PATTERN.matcher(descriptionText);
-
+                if (matcher.find()) {
+                    itemDescription = matcher.group(2);
+                }
                 Pattern pattern = Pattern.compile("(.*\\:)");
-                Matcher imgMatcher = pattern.matcher(URL);
-                while (imgMatcher.find()) {
-                    String http = imgMatcher.group(1);
-                    imageResult= itemImage.replace("background-image: url",http);
-                    String result = imageResult.replace("('","");
-                    imageResult =result.replace("')","");
+                Matcher urlMatcher = pattern.matcher(URL);
+                while (urlMatcher.find()) {
+                    String http = urlMatcher.group(1);
+                    Matcher imageMather = IMAGE_PATTERN.matcher(itemImage);
+                    while (imageMather.find()) {
+                        String str = imageMather.group(5);
+                       imageUrl=http+str;
+                   }
                 }
 
                 Item item = itemRepository.findOneByCode(itemCode).orElseGet(() -> new Item(itemCode));
@@ -128,21 +113,11 @@ public class ItemsUpdateTask implements Runnable {
                 item.setModel(itemText);
                 item.setDescription(itemDescription);
                 item.setPrice(itemPrice);
-                item.setImage(imageResult);
+                item.setImage(imageUrl);
                 item.setUrl(itemLink);
-                item.setImage(imageResult);
-
-                //TODO: find image url
-//                Element itemImage = itemElement.selectFirst("a.bx_catalog_item_images");
-//                String imageStyle = itemImage.attr("style");
-                //   String image = itemImage.absUrl("src");
-                //                Parser.URL.findProtocol();
-                item.setImage(imageResult);
-
                 item.setAvailable(itemElement.select(".product_available .availability.v_0").isEmpty());
                 item.setCategory(category);
                 itemRepository.save(item);
-
             }
         }
     }
